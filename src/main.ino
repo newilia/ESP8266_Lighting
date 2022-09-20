@@ -16,6 +16,7 @@
 
 Leds g_leds;
 GyverPortal g_portal;
+WebSocketsServer g_socketServer(81);
 void InitEffectsManager();
 void InitWifi();
 void InitLeds();
@@ -28,12 +29,14 @@ void setup()
 	InitLeds();	
 	InitWifi();
 	InitPortal();
-	InitEffectsManager();	
+	InitEffectsManager();
+	g_socketServer.begin();
 }
 
 void loop()
 {
 	g_portal.tick();
+	g_socketServer.loop();
 	EffectsManager::instance().Update();
 	SaveManager::instance().Update();
 }
@@ -97,7 +100,10 @@ void InitWifi()
 		Serial.print(", pass = ");
 		Serial.println(param.password);
 
-		FadingEffect effect(g_leds, CRGB::Orange);
+		
+		FadingEffect effect;
+		effect.SetLeds(g_leds);
+		effect.SetColor(CRGB::Cyan);
 		while (WiFi.status() == WL_DISCONNECTED)
 		{
 			effect.Update();
@@ -121,7 +127,7 @@ void InitWifi()
 				delay(300);
 			}
 			FastLED.showColor(CRGB::Black);
-			SaveManager::instance().GetDataToChange().wifi.mode = WiFiMode::WIFI_AP;
+			//SaveManager::instance().GetDataToChange().wifi.mode = WiFiMode::WIFI_AP;
 		}
 	}	
 

@@ -5,7 +5,7 @@
 
 struct SaveData
 {
-	static const uint8_t CURRENT_VERSION = 8;
+	static const uint8_t CURRENT_VERSION = 10;
 
 	uint8_t 		version = CURRENT_VERSION;
 	struct
@@ -18,9 +18,14 @@ struct SaveData
 	}				wifi;
 
 	int				ledsCount = 72;
-	uint8_t 		brightness = 255;
-	uint8_t 		currentEffect = 0;
-	CRGB			color = CRGB::White;
+	struct
+	{
+		uint8_t 		brightness = 255;
+		uint8_t 		currentEffect = 1;
+		CRGB			color = CRGB::White;
+		uint8_t			speed = EFFECT_SPEED_DEFAULT;
+	}				effects;
+	
 };
 
 using SaveManager = SaveManagerTemplate<SaveData>;

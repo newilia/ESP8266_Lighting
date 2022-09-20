@@ -11,4 +11,4 @@ void HandleMainPage();
 void BuildConfigPage();
 void HandleConfigPage();
 
-void AddScript();
+void AddCustomScript();

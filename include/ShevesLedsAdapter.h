@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <FastLED.h>
+#include <utility>
 
 struct Shelf
 {
@@ -46,12 +47,8 @@ public:
 		m_shelves[index] = shelf;
 	}
 
-	const Shelf * GetShelf(uint8_t index) const
+	std::pair<const Shelf*, int> GetShelves() const
 	{
-		if (index >= m_count || !m_shelves)
-		{
-			return nullptr;
-		}
-		return &m_shelves[index];
+		return {m_shelves, m_count};
 	}
 };

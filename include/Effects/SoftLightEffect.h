@@ -3,16 +3,10 @@
 #include <FastLED.h>
 #include <Utils.h>
 
-class SoftLightEffect : public IEffect, public LedsContainer, public SingleColoredEffect
+class SoftLightEffect : public LedsContainer, public ColoredEffect
 {
 public:
-	SoftLightEffect(Leds leds, const CRGB * color)
-	: SingleColoredEffect(color)
-	, LedsContainer(leds) {}
-
-	SoftLightEffect(Leds leds, CRGB color)
-	: SingleColoredEffect(color)
-	, LedsContainer(leds) {}
+	SoftLightEffect() = default;
 
 	void Update() override
 	{
@@ -22,7 +16,7 @@ public:
 			auto leds = m_leds.first;
 			for (int i = 0; i < width; ++i)
 			{
-				CRGB color = *m_color;
+				CRGB color = m_color;
 				float cosArg = 6.28 * i / width;
 				int fadeFactor = 255 * (0.5 + 0.5 * cos(cosArg));
 				color.fadeToBlackBy(fadeFactor);

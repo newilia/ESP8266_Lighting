@@ -10,46 +10,53 @@ public:
 	virtual void Update() = 0;
 };
 
-class LedsContainer
+class LedsContainer : virtual public IEffect
 {
-public:
-	LedsContainer(Leds leds)
-	: m_leds(leds) {}
-
 protected:
-	Leds	m_leds;
+	Leds	m_leds = {nullptr, 0};
+public:
+	LedsContainer() = default;
+	void SetLeds(Leds leds) { m_leds = leds; }
 };
 
-class SingleColoredEffect
+class ColoredEffect : virtual public IEffect
 {
+protected:
+	CRGB 	m_color = CRGB::White;
 public:
-	SingleColoredEffect(const CRGB * externalColor)
-	: m_color(externalColor) {}
+	ColoredEffect() = default;
+	void SetColor(CRGB color) {m_color = color; }
+	CRGB GetColor()	{ return m_color; }
+};
 
-	SingleColoredEffect(CRGB externalColor)
-	: m_color(new CRGB(externalColor))
-	, m_isColorOwner(true) {}
+const uint8_t PERIOD_MIN = 5;
+const uint8_t PERIOD_MAX = 30;
 
-	~SingleColoredEffect()
+class SpeedEffect : virtual public IEffect
+{
+protected:
+	uint8_t m_speed = EFFECT_SPEED_DEFAULT;
+	uint8_t m_defaultUpdatePeriod = 0;
+
+public:
+	SpeedEffect()
 	{
-		if (m_isColorOwner)
-		{
-			delete m_color;
-		}
+		SetSpeed(EFFECT_SPEED_DEFAULT);
 	}
 
-protected:
-	const CRGB * 	m_color = nullptr;
-	bool			m_isColorOwner = false;
+	void SetSpeed(uint8_t speed) 
+	{
+		m_speed = speed;
+		m_defaultUpdatePeriod = fmap(m_speed, EFFECT_SPEED_MIN, EFFECT_SPEED_MAX, PERIOD_MAX, PERIOD_MIN);
+	}
+	uint8_t GetSpeed() { return m_speed; }
 };
 
-template <typename TParam>
-class ParametrizedEffect
+class ShelvesEffect : virtual public IEffect
 {
-public:
-	ParametrizedEffect(const TParam * param)
-	: m_param(param) {}
-
 protected:
-	const TParam * m_param = nullptr;
+	ShelvesLedsAdapter	m_adapter;
+public:
+	ShelvesEffect() = default;
+	void SetShelvesLedsAdapter(ShelvesLedsAdapter adapter) { m_adapter = adapter; }
 };

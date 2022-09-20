@@ -16,15 +16,16 @@ public:
 	template<typename T = IEffect>
 	T * GetCurrentEffect() { return dynamic_cast<T*>(m_currentEffect); }
 
-	void OnEffectChanged();
+	void OnEffectSettingsChanged();
 
 private:
 	EffectsManager() {};
 	~EffectsManager() { delete m_currentEffect; }
-	void SetEffect();
+	void ConfigureEffect();
 
 	Leds				m_leds;
 	const SaveData * 	m_saveData;
+	uint8_t				m_currentEffectNumber = 0;
 	IEffect *			m_currentEffect = nullptr;
 	ShelvesLedsAdapter	m_shelvesAdapter;
 };

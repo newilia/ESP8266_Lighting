@@ -2,9 +2,11 @@
 #include "ExternVars.h"
 #include "Effects/EffectsManager.h"
 #include "Effects/EffectsBase.h"
+#include "Effects/FadingEffect.h"
 #include <GyverPortal.h>
 #include "Utils.h"
 #include "SaveData.h"
+#include <WebSocketsServer.h>
 
 namespace Names
 {
@@ -15,6 +17,7 @@ namespace Names
 	auto effect = "effect";
 	auto effectShowNames = "Выключить,Ровный свет,Мягкий свет,Затухание";
 	auto colorPicker = "color_picker";
+	auto effectSpeed = "effect_speed";
 	auto fading = "fading";
 	auto mainPage = "/";
 	auto configPage = "/config";
@@ -23,9 +26,15 @@ namespace Names
 #define data 			SaveManager::instance().GetData()
 #define dataToChange 	SaveManager::instance().GetDataToChange()
 
-uint32_t CRGB_to_int(const CRGB & color)
+
+void SendMessage(const char * message)
 {
-	return color.b | color.g << 8 | color.r << 16;
+	g_socketServer.broadcastTXT(message);
+}
+
+void ReloadPage()
+{
+	SendMessage("reload_page");
 }
 
 void InitPortal()
@@ -47,6 +56,7 @@ void BuildPage()
 	{
 		BuildConfigPage();
 	}
+	AddCustomScript();
 	BUILD_END();
 	LOG_LN(g_portal.uri());
 }
@@ -69,15 +79,24 @@ void BuildMainPage()
 	GP.HR();
 	
 	GP.BLOCK_BEGIN();
-	GP.LABEL("Яркость", "");
-	GP.BREAK();
-	GP.SLIDER(Names::brightness, data.brightness, 0, 255);
-	GP.BREAK();
+	GP.SLIDER(Names::brightness, "Яркость", data.effects.brightness, 0, 255);
 	GP.BLOCK_END();
 
-	GP.SELECT(Names::effect, Names::effectShowNames, data.currentEffect);
-	GP.LABEL(" ");
-	GP.COLOR(Names::colorPicker, CRGB_to_int(data.color));
+	GP.SELECT(Names::effect, Names::effectShowNames, data.effects.currentEffect);
+	
+	if (EffectsManager::instance().GetCurrentEffect<ColoredEffect>())
+	{
+		GP.LABEL(" ");
+		GP.COLOR(Names::colorPicker, CRGB_to_int(data.effects.color));
+	}
+	
+	if (EffectsManager::instance().GetCurrentEffect<SpeedEffect>())
+	{
+		GP.BLOCK_BEGIN();
+		GP.SLIDER(Names::effectSpeed, "Скорость", data.effects.speed, EFFECT_SPEED_MIN, EFFECT_SPEED_MAX);
+		GP.BLOCK_END();
+	}
+	
 	GP.BREAK();
 }
 
@@ -85,18 +104,26 @@ void HandleMainPage()
 {
 	if (g_portal.click(Names::colorPicker))
 	{
-		dataToChange.color = g_portal.getColor(Names::colorPicker).getHEX();
+		dataToChange.effects.color = g_portal.getColor(Names::colorPicker).getHEX();
+		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 	if (g_portal.click(Names::brightness))
 	{
-		dataToChange.brightness = g_portal.getInt(Names::brightness);
-		FastLED.setBrightness(data.brightness);
+		dataToChange.effects.brightness = g_portal.getInt(Names::brightness);
+		FastLED.setBrightness(data.effects.brightness);
+		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 	if (g_portal.click(Names::effect))
 	{
-		int effect = g_portal.getSelected(Names::effect, Names::effectShowNames);
-		dataToChange.currentEffect = effect;
-		EffectsManager::instance().OnEffectChanged();
+		auto effectNumber = g_portal.getSelected(Names::effect, Names::effectShowNames);
+		dataToChange.effects.currentEffect = effectNumber;
+		EffectsManager::instance().OnEffectSettingsChanged();
+		ReloadPage();
+	}
+	if (g_portal.click(Names::effectSpeed))
+	{
+		dataToChange.effects.speed = g_portal.getInt(Names::effectSpeed);
+		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 }
 
@@ -119,19 +146,30 @@ void HandleConfigPage()
 {
 	if (g_portal.click(Names::reset))
 	{
+		ReloadPage();
 		Reboot();
 	}
 	else if (g_portal.click(Names::resetData))
 	{
+		ReloadPage();
 		SaveManager::instance().ResetAndSave();
-		g_portal.server.send(200, "text/plain", "reload");
 		Reboot();
 	}
 }
 
-void AddScript()
+void AddCustomScript()
 {
-	
+	*_GP += 
+	F("<script type=\"text/javascript\">\\
+	const socket = new WebSocket('ws://' + window.location.hostname + ':81/');\\
+	socket.addEventListener('message', (event) => {\\
+		console.log('Message from server ', event.data);\\
+		\\
+		if (event.data == 'reload_page') {\\
+			window.location.reload();\\
+		}\\
+	});\\
+	</script>");
 }
 
 #undef data

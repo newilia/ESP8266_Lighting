@@ -405,7 +405,7 @@ struct Builder {
         *_GP += F("</label>");
     }
     void SLIDER(const char* name, int value, int min, int max, int step = 1) {
-        LABEL_MINI(min);
+        //LABEL_MINI(min);
         *_GP += F("<input type=\"range\" name=\"");
         *_GP += name;
         *_GP += F("\" id=\"");
@@ -419,7 +419,7 @@ struct Builder {
         *_GP += F("\" step=\"");
         *_GP += step;
         *_GP += F("\" oninput=\"GP_click(this)\">\n");
-        LABEL_MINI(max);
+        //LABEL_MINI(max);
     }
     void SLIDER(const char* name, const char* label, int value, int min, int max, int step = 1) {
         *_GP += F("<div class=\"sldBlock\">");

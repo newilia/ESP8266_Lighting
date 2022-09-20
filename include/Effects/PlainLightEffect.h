@@ -3,20 +3,16 @@
 #include <FastLED.h>
 #include <Utils.h>
 
-class PlainLightEffect : public IEffect, public SingleColoredEffect
+class PlainLightEffect : public ColoredEffect
 {
 public:
-	PlainLightEffect(const CRGB * color)
-	: SingleColoredEffect(color) {}
-
-	PlainLightEffect(CRGB color)
-	: SingleColoredEffect(color) {}
-
+	PlainLightEffect() = default;
+	
 	void Update() override
 	{		
 		EVERY_N_MILLIS(10)
 		{
-			FastLED.showColor(*m_color);
+			FastLED.showColor(m_color);
 		}
 	}
 };
