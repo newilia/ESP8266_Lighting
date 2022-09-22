@@ -10,9 +10,9 @@ public:
 	
 	void Update() override
 	{		
-		EVERY_N_MILLIS(10)
+		EVERY_N_MILLIS(EFFECTS_PERIOD_DEFAULT)
 		{
-			FastLED.showColor(m_color);
+			FastLED.showColor(GetColor());
 		}
 	}
 };

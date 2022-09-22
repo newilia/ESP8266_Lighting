@@ -3,6 +3,7 @@
 #include "Effects/EffectsManager.h"
 #include "Effects/EffectsBase.h"
 #include "Effects/FadingEffect.h"
+#include "Effects/FlasherEffect.h"
 #include <GyverPortal.h>
 #include "Utils.h"
 #include "SaveData.h"
@@ -15,17 +16,20 @@ namespace Names
 	auto resetData = "reset";
 	auto brightness = "brightness";
 	auto effect = "effect";
-	auto effectShowNames = "Выключить,Ровный свет,Мягкий свет,Затухание";
-	auto colorPicker = "color_picker";
+	auto effectShowNames = "Выключить,Ровный свет,Мягкий свет,Затухание,Стробоскоп";
+	auto colorPickerPrefix = "color_picker";
 	auto effectSpeed = "effect_speed";
 	auto fading = "fading";
 	auto mainPage = "/";
 	auto configPage = "/config";
+	auto colorsCount = "colors_count";
+	auto flasherMode = "flasher_mode";
 }
 
 #define data 			SaveManager::instance().GetData()
 #define dataToChange 	SaveManager::instance().GetDataToChange()
 
+const int SPEED_SLIDER_MAX = 10;
 
 void SendMessage(const char * message)
 {
@@ -82,47 +86,87 @@ void BuildMainPage()
 	GP.SLIDER(Names::brightness, "Яркость", data.effects.brightness, 0, 255);
 	GP.BLOCK_END();
 
+	GP.BLOCK_BEGIN();
+	GP.LABEL("Режим");
 	GP.SELECT(Names::effect, Names::effectShowNames, data.effects.currentEffect);
-	
-	if (EffectsManager::instance().GetCurrentEffect<ColoredEffect>())
+	GP.BREAK();
+	GP.BLOCK_END();
+
+	if (auto effect = EffectsManager::instance().GetCurrentEffect<ColoredEffect>())
 	{
-		GP.LABEL(" ");
-		GP.COLOR(Names::colorPicker, CRGB_to_int(data.effects.color));
+		GP.BLOCK_BEGIN();
+		GP.LABEL("Цвет");
+		if (effect->CanAdjustColorsCount())
+		{
+			GP.NUMBER(Names::colorsCount, "", data.effects.colorsCount, 1, effect->GetMaxColorCount());
+		}
+		for (int i = 0; i < effect->GetColorsCount(); ++i)
+		{
+			auto colorPickerName = String(Names::colorPickerPrefix) + String(i);
+			GP.COLOR(colorPickerName.c_str(), CRGB_to_int(data.effects.colors[i]));
+		}
+		GP.BLOCK_END();
 	}
 	
 	if (EffectsManager::instance().GetCurrentEffect<SpeedEffect>())
 	{
 		GP.BLOCK_BEGIN();
-		GP.SLIDER(Names::effectSpeed, "Скорость", data.effects.speed, EFFECT_SPEED_MIN, EFFECT_SPEED_MAX);
+		int sliderValue = data.effects.speed * SPEED_SLIDER_MAX;
+		GP.SLIDER(Names::effectSpeed, "Скорость", sliderValue, 0, SPEED_SLIDER_MAX);
 		GP.BLOCK_END();
 	}
-	
-	GP.BREAK();
+
+	if (EffectsManager::instance().GetCurrentEffect<FlasherEffect>())
+	{
+		GP.BLOCK_BEGIN();
+		int mode = (int) data.effects.flasherMode;
+		GP.SLIDER(Names::flasherMode, "Режим", mode, 0, (int)FlasherEffect::Mode::COUNT - 1);
+		GP.BLOCK_END();
+	}
 }
 
 void HandleMainPage()
 {
-	if (g_portal.click(Names::colorPicker))
+	if (auto clickedElement = g_portal.clickName();
+		clickedElement.indexOf(Names::colorPickerPrefix) != -1)
 	{
-		dataToChange.effects.color = g_portal.getColor(Names::colorPicker).getHEX();
+		uint8_t index = clickedElement[strlen(Names::colorPickerPrefix)] - '0';
+		if (index < 0 || index >= COLORS_COUNT_MAX)
+		{
+			LOG("Invalid color index received: ");
+			LOG_LN(index);
+			return;
+		}
+		dataToChange.effects.colors[index] = g_portal.getColor(clickedElement).getHEX();
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
-	if (g_portal.click(Names::brightness))
+	else if (g_portal.click(Names::colorsCount))
+	{
+		dataToChange.effects.colorsCount = g_portal.getInt(Names::colorsCount);
+		EffectsManager::instance().OnEffectSettingsChanged();
+		ReloadPage();
+	}
+	else if (g_portal.click(Names::brightness))
 	{
 		dataToChange.effects.brightness = g_portal.getInt(Names::brightness);
 		FastLED.setBrightness(data.effects.brightness);
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
-	if (g_portal.click(Names::effect))
+	else if (g_portal.click(Names::effect))
 	{
 		auto effectNumber = g_portal.getSelected(Names::effect, Names::effectShowNames);
 		dataToChange.effects.currentEffect = effectNumber;
 		EffectsManager::instance().OnEffectSettingsChanged();
 		ReloadPage();
 	}
-	if (g_portal.click(Names::effectSpeed))
+	else if (g_portal.click(Names::effectSpeed))
 	{
-		dataToChange.effects.speed = g_portal.getInt(Names::effectSpeed);
+		dataToChange.effects.speed = (float)g_portal.getInt(Names::effectSpeed) / SPEED_SLIDER_MAX;
+		EffectsManager::instance().OnEffectSettingsChanged();
+	}
+	else if (g_portal.click(Names::flasherMode))
+	{
+		dataToChange.effects.flasherMode = (FlasherEffect::Mode) g_portal.getInt(Names::flasherMode);
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 }

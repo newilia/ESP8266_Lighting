@@ -1,7 +1,6 @@
 #pragma once
 #include "Effects/EffectsBase.h"
 #include <FastLED.h>
-#include <SaveData.h>
 #include "GlobalDefs.h"
 
 class FadingEffect : public LedsContainer, public ColoredEffect, public SpeedEffect
@@ -11,9 +10,9 @@ public:
 
 	void Update() override
 	{
-		EVERY_N_MILLIS(20)
+		EVERY_N_MILLIS(EFFECTS_PERIOD_DEFAULT)
 		{
-			m_timeArg += 0.1 + m_speed * 0.5;
+			m_timeArg += 1 + m_speed * 5;
 
 			int brightness = (int)m_timeArg % 512;
 			if (brightness > 255)
@@ -21,7 +20,7 @@ public:
 				brightness = 511 - brightness;
 			}
 			brightness = PowNorm(brightness, 255, 2);
-			auto color = m_color;
+			auto color = GetColor();
 			color.nscale8(brightness);
 
 			for (int i = 0; i < m_leds.second; ++i)

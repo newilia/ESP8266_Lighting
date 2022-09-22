@@ -2,14 +2,16 @@
 #include <FastLED.h>
 #include "Effects/EffectsBase.h"
 #include "Singleton.h"
-#include "ShevesLedsAdapter.h"
+#include "ShelvesLedsAdapter.h"
 #include "SaveData.h"
+
+using EffectsData = SaveData::EffectsData;
 
 class EffectsManager : public Singleton<EffectsManager>
 {
 	friend class Singleton<EffectsManager>;
 public:
-	void Init(Leds leds, const SaveData * saveData);
+	void Init(Leds leds, const EffectsData * saveData);
 	void Update();
 	ShelvesLedsAdapter & GetShelvesAdapter() { return m_shelvesAdapter; }
 
@@ -24,7 +26,7 @@ private:
 	void ConfigureEffect();
 
 	Leds				m_leds;
-	const SaveData * 	m_saveData;
+	const EffectsData * m_effectsData;
 	uint8_t				m_currentEffectNumber = 0;
 	IEffect *			m_currentEffect = nullptr;
 	ShelvesLedsAdapter	m_shelvesAdapter;

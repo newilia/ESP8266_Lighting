@@ -275,7 +275,7 @@ struct Builder {
         }
     }
     
-    void NUMBER(const char* name, const char* place, int value = INT32_MAX) {
+    void NUMBER(const char* name, const char* place, int value = INT32_MAX, int min = INT32_MIN, int max = INT32_MAX) {
         *_GP += F("<input type=\"number\" name=\"");
         *_GP += name;
         *_GP += F("\" id=\"");
@@ -283,6 +283,14 @@ struct Builder {
         if (value != INT32_MAX) {
             *_GP += F("\" value=\"");
             *_GP += value;
+        }
+        if (min != INT32_MIN) {
+            *_GP += F("\" min=\"");
+            *_GP += min;
+        }
+        if (max != INT32_MAX) {
+            *_GP += F("\" max=\"");
+            *_GP += max;
         }
         *_GP += F("\" placeholder=\"");
         *_GP += place;

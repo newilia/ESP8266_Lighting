@@ -10,13 +10,13 @@ public:
 
 	void Update() override
 	{
-		EVERY_N_MILLIS(10)
+		EVERY_N_MILLIS(EFFECTS_PERIOD_DEFAULT)
 		{
 			const int width = 15;
 			auto leds = m_leds.first;
 			for (int i = 0; i < width; ++i)
 			{
-				CRGB color = m_color;
+				CRGB color = GetColor();
 				float cosArg = 6.28 * i / width;
 				int fadeFactor = 255 * (0.5 + 0.5 * cos(cosArg));
 				color.fadeToBlackBy(fadeFactor);

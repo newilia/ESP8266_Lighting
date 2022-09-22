@@ -1,5 +1,5 @@
 #include "GlobalDefs.h"
-#define DEBUG_WIFI(...) Serial.println(...);
+#define DEBUG_WIFI(x) Serial.println(x);
 #include <ESP8266WebServer.h>
 #include <WebSocketsServer.h>
 #include <FS.h>
@@ -10,7 +10,7 @@
 #include "Effects/EffectsBase.h"
 #include "Effects/EffectsManager.h"
 #include "Effects/FadingEffect.h"
-#include "ShevesLedsAdapter.h"
+#include "ShelvesLedsAdapter.h"
 #include "SaveData.h"
 #include <utility>
 
@@ -43,17 +43,16 @@ void loop()
 
 void InitEffectsManager()
 {
-	auto & data = SaveManager::instance().GetData();
-	EffectsManager::instance().Init(g_leds, &SaveManager::instance().GetData());
+	EffectsManager::instance().Init(g_leds, &SaveManager::instance().GetData().effects);
 	
-	auto adapter = EffectsManager::instance().GetShelvesAdapter();
+	auto & adapter = EffectsManager::instance().GetShelvesAdapter();
 	adapter.Init(4);
 	float heights[] = {0, 0.33, 0.5, 1};
 	for (int i = 0; i < 4; ++i)
 	{
-		adapter.SetShelf(0, Shelf(g_leds.first + i * SHELF_WIDTH, SHELF_WIDTH, heights[i], false));
+		adapter.SetShelf(i, Shelf(g_leds.first + i * SHELF_WIDTH, SHELF_WIDTH, heights[i], false));
 	}
-	adapter.SetShelf(4, Shelf(g_leds.first + 4 * SHELF_WIDTH, 6, 1, true));
+	adapter.SetShelf(4, Shelf(g_leds.first + 4 * SHELF_WIDTH, 6, heights[3], true));
 }
 
 void EnableAP()
@@ -103,7 +102,8 @@ void InitWifi()
 		
 		FadingEffect effect;
 		effect.SetLeds(g_leds);
-		effect.SetColor(CRGB::Cyan);
+		effect.SetColor(CRGB::Orange);
+		effect.SetSpeed(1.2);
 		while (WiFi.status() == WL_DISCONNECTED)
 		{
 			effect.Update();
@@ -129,7 +129,7 @@ void InitWifi()
 			FastLED.showColor(CRGB::Black);
 			//SaveManager::instance().GetDataToChange().wifi.mode = WiFiMode::WIFI_AP;
 		}
-	}	
+	}
 
 	if (param.mode & WiFiMode::WIFI_AP)
 	{
@@ -139,16 +139,20 @@ void InitWifi()
 
 void InitLeds()
 {
-	g_leds.second = SaveManager::instance().GetData().ledsCount;
-	g_leds.first = new CRGB[g_leds.second];
-	if (!g_leds.first)
+	auto ledsCount = SaveManager::instance().GetData().ledsCount;
+	g_leds.first = new CRGB[ledsCount];
+
+	if (g_leds.first)
+	{
+		g_leds.second = ledsCount;
+		FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(g_leds.first, g_leds.second);
+		FastLED.setTemperature(CRGB(255, 190, 140));
+		FastLED.setDither(DISABLE_DITHER);
+		FastLED.showColor(CRGB::Black);
+		FastLED.setBrightness(SaveManager::instance().GetData().effects.brightness);
+	}
+	else
 	{
 		LOG_LN("Failed to allocate g_leds");
-		return;
-	}
-
-	FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(g_leds.first, g_leds.second);
-	FastLED.setTemperature(CRGB(255, 190, 140));
-	FastLED.setDither(DISABLE_DITHER);
-	FastLED.showColor(CRGB::Black);
+	}	
 }

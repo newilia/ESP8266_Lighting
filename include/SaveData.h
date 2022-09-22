@@ -2,10 +2,11 @@
 #include <FastLED.h>
 #include <SaveManagerTemplate.h>
 #include <ESP8266WiFi.h>
+#include <Effects/FlasherEffect.h>
 
 struct SaveData
 {
-	static const uint8_t CURRENT_VERSION = 10;
+	static const uint8_t CURRENT_VERSION = 12;
 
 	uint8_t 		version = CURRENT_VERSION;
 	struct
@@ -18,12 +19,15 @@ struct SaveData
 	}				wifi;
 
 	int				ledsCount = 72;
-	struct
+
+	struct EffectsData
 	{
-		uint8_t 		brightness = 255;
-		uint8_t 		currentEffect = 1;
-		CRGB			color = CRGB::White;
-		uint8_t			speed = EFFECT_SPEED_DEFAULT;
+		uint8_t 				brightness = 255;
+		uint8_t 				currentEffect = 1;
+		CRGB					colors[COLORS_COUNT_MAX] = {CRGB::White, CRGB::Blue, CRGB::Red};
+		float					speed = EFFECT_SPEED_DEFAULT;
+		uint8_t					colorsCount = 1;
+		FlasherEffect::Mode 	flasherMode = FlasherEffect::Mode::HALF;
 	}				effects;
 	
 };
