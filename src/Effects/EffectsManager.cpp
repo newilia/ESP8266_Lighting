@@ -62,7 +62,8 @@ void EffectsManager::ConfigureEffect()
 	}
 	if (auto effect = GetCurrentEffect<FlasherEffect>())
 	{
-		effect->SetMode(m_effectsData->flasherMode);
+		effect->SetFullWidth(m_effectsData->flasher.fullWidth);
+		effect->SetRandomOrder(m_effectsData->flasher.randomOrder);
 	}
 }
 

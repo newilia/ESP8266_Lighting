@@ -39,3 +39,21 @@ inline float PowNorm(float value, float maxValue, int power)
 	}
 	return maxValue * result;
 }
+
+template<typename T>
+inline uint8_t GetTimeSwitchingCounter(time_t time, const T * timings, uint8_t timingsSize, uint8_t counterMax)
+{
+	time %= timings[timingsSize - 1];
+	uint8_t counter = 0;
+
+	for (int i = 0; i < timingsSize; ++i)
+	{
+		if (timings[i] >= time)
+		{
+			break;
+		}
+		++counter;
+	}
+	uint8_t result = counter % counterMax;
+	return result;
+}

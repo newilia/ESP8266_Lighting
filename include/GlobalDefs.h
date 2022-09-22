@@ -13,6 +13,6 @@ const int EFFECT_SPEED_MIN = 0;
 const int EFFECT_SPEED_MAX = 1;
 const float EFFECT_SPEED_DEFAULT = 0.5;
 const int EFFECTS_PERIOD_DEFAULT = 10;
-const int COLORS_COUNT_MAX = 3;
+const int COLORS_COUNT_MAX = 5;
 
 typedef std::pair<CRGB*, int> Leds;

@@ -6,7 +6,7 @@
 
 struct SaveData
 {
-	static const uint8_t CURRENT_VERSION = 12;
+	static const uint8_t CURRENT_VERSION = 13;
 
 	uint8_t 		version = CURRENT_VERSION;
 	struct
@@ -22,12 +22,17 @@ struct SaveData
 
 	struct EffectsData
 	{
-		uint8_t 				brightness = 255;
-		uint8_t 				currentEffect = 1;
-		CRGB					colors[COLORS_COUNT_MAX] = {CRGB::White, CRGB::Blue, CRGB::Red};
-		float					speed = EFFECT_SPEED_DEFAULT;
-		uint8_t					colorsCount = 1;
-		FlasherEffect::Mode 	flasherMode = FlasherEffect::Mode::HALF;
+		uint8_t 		brightness = 255;
+		uint8_t 		currentEffect = 1;
+		CRGB			colors[COLORS_COUNT_MAX] = {CRGB::White, CRGB::Blue, CRGB::Red};
+		float			speed = EFFECT_SPEED_DEFAULT;
+		uint8_t			colorsCount = 1;
+		struct 
+		{
+			bool			fullWidth = true;
+			bool			randomOrder = false;
+		}				flasher;
+			
 	}				effects;
 	
 };

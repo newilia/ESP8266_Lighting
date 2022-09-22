@@ -43,6 +43,12 @@ void loop()
 
 void InitEffectsManager()
 {
+	if (!g_leds.first)
+	{
+		LOG_LN("Failed to init EffectsManager: init leds first");
+		return;
+	}
+
 	EffectsManager::instance().Init(g_leds, &SaveManager::instance().GetData().effects);
 	
 	auto & adapter = EffectsManager::instance().GetShelvesAdapter();
@@ -50,7 +56,13 @@ void InitEffectsManager()
 	float heights[] = {0, 0.33, 0.5, 1};
 	for (int i = 0; i < 4; ++i)
 	{
-		adapter.SetShelf(i, Shelf(g_leds.first + i * SHELF_WIDTH, SHELF_WIDTH, heights[i], false));
+		CRGB * ledsStart = g_leds.first + i * SHELF_WIDTH;
+		CRGB * ledsEnd = ledsStart + SHELF_WIDTH;
+		if (ledsEnd - g_leds.first > g_leds.second)
+		{
+			LOG_LN("Shelf out of bounds");
+		}
+		adapter.SetShelf(i, Shelf(ledsStart, SHELF_WIDTH, heights[i], false));
 	}
 	adapter.SetShelf(4, Shelf(g_leds.first + 4 * SHELF_WIDTH, 6, heights[3], true));
 }

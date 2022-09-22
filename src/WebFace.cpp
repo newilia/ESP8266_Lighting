@@ -23,7 +23,11 @@ namespace Names
 	auto mainPage = "/";
 	auto configPage = "/config";
 	auto colorsCount = "colors_count";
-	auto flasherMode = "flasher_mode";
+	auto flasherFullWidth = "flasher_full_width";
+	auto flasherRandomOrder = "flasher_random_order";
+	auto configForm = "/config_form";
+	auto configFormSubmit = "config_form_submit";
+	auto ledsCount = "leds_count";
 }
 
 #define data 			SaveManager::instance().GetData()
@@ -116,12 +120,23 @@ void BuildMainPage()
 		GP.BLOCK_END();
 	}
 
-	if (EffectsManager::instance().GetCurrentEffect<FlasherEffect>())
+	if (auto effect = EffectsManager::instance().GetCurrentEffect<FlasherEffect>())
 	{
-		GP.BLOCK_BEGIN();
-		int mode = (int) data.effects.flasherMode;
-		GP.SLIDER(Names::flasherMode, "Режим", mode, 0, (int)FlasherEffect::Mode::COUNT - 1);
-		GP.BLOCK_END();
+		if (effect->GetColorsCount() > 1 || effect->GetColorsCount() > 2)
+		{
+			GP.BLOCK_BEGIN();
+			if (effect->GetColorsCount() > 1)
+			{
+				GP.LABEL("Вся ширина");
+				GP.CHECK(Names::flasherFullWidth, data.effects.flasher.fullWidth);
+			}
+			if (effect->GetColorsCount() > 2)
+			{
+				GP.LABEL("Случайный порядок");
+				GP.CHECK(Names::flasherRandomOrder, data.effects.flasher.randomOrder);
+			}
+			GP.BLOCK_END();
+		}
 	}
 }
 
@@ -164,9 +179,14 @@ void HandleMainPage()
 		dataToChange.effects.speed = (float)g_portal.getInt(Names::effectSpeed) / SPEED_SLIDER_MAX;
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
-	else if (g_portal.click(Names::flasherMode))
+	else if (g_portal.click(Names::flasherFullWidth))
 	{
-		dataToChange.effects.flasherMode = (FlasherEffect::Mode) g_portal.getInt(Names::flasherMode);
+		dataToChange.effects.flasher.fullWidth = g_portal.getCheck(Names::flasherFullWidth);
+		EffectsManager::instance().OnEffectSettingsChanged();
+	}
+	else if (g_portal.click(Names::flasherRandomOrder))
+	{
+		dataToChange.effects.flasher.randomOrder = g_portal.getCheck(Names::flasherRandomOrder);
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 }
@@ -181,6 +201,16 @@ void BuildConfigPage()
 
 	GP.BUTTON(Names::reset, "Перезагрузить");
 	GP.BREAK();
+
+	GP.FORM_BEGIN(Names::configForm);
+	{
+		GP.LABEL("Кол-во светодиодов");
+		GP.NUMBER(Names::ledsCount, "", data.ledsCount, 1, 300);
+		GP.BREAK();
+
+		GP.FORM_SUBMIT(Names::configFormSubmit, "Применить");
+	}
+	GP.FORM_END();
 
 	GP.BUTTON(Names::resetData, "Сбросить установки");
 	GP.BREAK();
@@ -197,6 +227,12 @@ void HandleConfigPage()
 	{
 		ReloadPage();
 		SaveManager::instance().ResetAndSave();
+		Reboot();
+	}
+	else if (g_portal.isFormSubmitted(Names::configFormSubmit))
+	{
+		dataToChange.ledsCount = g_portal.getInt(Names::ledsCount);
+		SaveManager::instance().Save();
 		Reboot();
 	}
 }
