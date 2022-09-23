@@ -71,6 +71,7 @@ public:
 
 	void ResetAndSave()
 	{
+		LOG_FUNC_LN();
 		m_data = TData();
 		Save();
 	}

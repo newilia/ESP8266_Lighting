@@ -6,7 +6,7 @@
 
 struct SaveData
 {
-	static const uint8_t CURRENT_VERSION = 13;
+	static const uint8_t CURRENT_VERSION = 15;
 
 	uint8_t 		version = CURRENT_VERSION;
 	struct

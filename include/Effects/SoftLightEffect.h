@@ -12,8 +12,9 @@ public:
 	{
 		EVERY_N_MILLIS(EFFECTS_PERIOD_DEFAULT)
 		{
+			// TODO make it with shelves
 			const int width = 15;
-			auto leds = m_leds.first;
+			auto leds = m_leds.start;
 			for (int i = 0; i < width; ++i)
 			{
 				CRGB color = GetColor();

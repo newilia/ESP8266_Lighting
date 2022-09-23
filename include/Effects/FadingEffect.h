@@ -23,9 +23,9 @@ public:
 			auto color = GetColor();
 			color.nscale8(brightness);
 
-			for (int i = 0; i < m_leds.second; ++i)
+			for (auto * led = m_leds.start; led < m_leds.end; ++led)
 			{
-				m_leds.first[i] = color;
+				*led = color;
 			}
 			FastLED.show();
 		}

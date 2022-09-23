@@ -1,7 +1,7 @@
 #pragma once
 #include <FastLED.h>
 #include "GlobalDefs.h"
-#include "ShelvesLedsAdapter.h"
+#include "LedStripsAdapter.h"
 #include "Utils.h"
 
 class IEffect
@@ -14,10 +14,10 @@ public:
 class LedsContainer : virtual public IEffect
 {
 protected:
-	Leds	m_leds = {nullptr, 0};
+	LedsRange	m_leds;
 public:
 	LedsContainer() = default;
-	void SetLeds(Leds leds) { m_leds = leds; }
+	void SetLeds(LedsRange leds) { m_leds = leds; }
 };
 
 class ColoredEffect : virtual public IEffect
@@ -128,8 +128,8 @@ public:
 class ShelvesEffect : virtual public IEffect
 {
 protected:
-	ShelvesLedsAdapter * m_adapter;
+	LedStripsAdapter * m_adapter;
 public:
 	ShelvesEffect() = default;
-	void SetShelvesLedsAdapter(ShelvesLedsAdapter & adapter) { m_adapter = &adapter; }
+	void SetLedStripsAdapter(LedStripsAdapter & adapter) { m_adapter = &adapter; }
 };

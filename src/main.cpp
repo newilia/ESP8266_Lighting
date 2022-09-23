@@ -10,11 +10,11 @@
 #include "Effects/EffectsBase.h"
 #include "Effects/EffectsManager.h"
 #include "Effects/FadingEffect.h"
-#include "ShelvesLedsAdapter.h"
+#include "LedStripsAdapter.h"
 #include "SaveData.h"
 #include <utility>
 
-Leds g_leds;
+LedsRange g_leds;
 GyverPortal g_portal;
 WebSocketsServer g_socketServer(81);
 void InitEffectsManager();
@@ -43,28 +43,35 @@ void loop()
 
 void InitEffectsManager()
 {
-	if (!g_leds.first)
+	if (!g_leds)
 	{
 		LOG_LN("Failed to init EffectsManager: init leds first");
 		return;
 	}
 
 	EffectsManager::instance().Init(g_leds, &SaveManager::instance().GetData().effects);
-	
-	auto & adapter = EffectsManager::instance().GetShelvesAdapter();
-	adapter.Init(4);
-	float heights[] = {0, 0.33, 0.5, 1};
-	for (int i = 0; i < 4; ++i)
-	{
-		CRGB * ledsStart = g_leds.first + i * SHELF_WIDTH;
-		CRGB * ledsEnd = ledsStart + SHELF_WIDTH;
-		if (ledsEnd - g_leds.first > g_leds.second)
-		{
-			LOG_LN("Shelf out of bounds");
-		}
-		adapter.SetShelf(i, Shelf(ledsStart, SHELF_WIDTH, heights[i], false));
+	EffectsManager::instance().SetStripsCount(6);
+
+	const int horizontalStipsCount = 4;
+	float heights[horizontalStipsCount] = {0, 0.33, 0.5, 1};
+	for (int i = 0; i < horizontalStipsCount; ++i)
+	{		
+		Strip strip;
+		strip.leds.start = g_leds.start + i * SHELF_WIDTH;
+		strip.leds.end = strip.leds.start + SHELF_WIDTH; 
+		strip.position = heights[i];
+		strip.isSpecial = false;
+		EffectsManager::instance().SetStrip(i, strip);
 	}
-	adapter.SetShelf(4, Shelf(g_leds.first + 4 * SHELF_WIDTH, 6, heights[3], true));
+	for (int i = 0; i < 2; ++i)
+	{
+		Strip strip;
+		strip.leds.start = (g_leds.start + (horizontalStipsCount * SHELF_WIDTH)) + i * SHELF_DEPTH;
+		strip.leds.end = strip.leds.start + SHELF_DEPTH; 
+		strip.position = 1;
+		strip.isSpecial = true;
+		EffectsManager::instance().SetStrip(horizontalStipsCount + i, strip);
+	}
 }
 
 void EnableAP()
@@ -79,23 +86,33 @@ void EnableAP()
 	WiFi.softAPConfig(Ip, Gateway, Subnet);
 
 	auto apName = SaveManager::instance().GetData().wifi.ApName;
+	if (strlen(apName) == 0)
+	{
+		LOG_LN("AP name is empty, set to default value \"ESP8266\"");
+		strcpy(SaveManager::instance().GetDataToChange().wifi.ApName, "ESP8266");
+	}
 	
 	if (WiFi.softAP(apName))
 	{
-		LOG("AP");
+		LOG("AP\"");
 		LOG(apName);
-		LOG_LN("started");
+		LOG_LN("\"started");
 	}
 	else
 	{
-		LOG_LN("Can't start AP");
+		LOG("Can't start AP \"");
+		LOG(apName);
+		LOG_LN("\"");
 	}
 }
 
 void InitWifi()
 {
 	const auto & param = SaveManager::instance().GetData().wifi;
-	
+
+	LOG("Wifi mode");
+	LOG_LN((int)param.mode);
+
 	if (param.mode & WiFiMode::WIFI_STA)
 	{
 		IPAddress Ip(192, 168, 0, 123); 	// IP-адрес для ESP
@@ -139,25 +156,28 @@ void InitWifi()
 				delay(300);
 			}
 			FastLED.showColor(CRGB::Black);
-			//SaveManager::instance().GetDataToChange().wifi.mode = WiFiMode::WIFI_AP;
+			EnableAP();
 		}
 	}
-
-	if (param.mode & WiFiMode::WIFI_AP)
+	else if (param.mode & WiFiMode::WIFI_AP)
 	{
 		EnableAP();
+	}
+	else
+	{
+		LOG_LN("Invalid Wifi mode");
 	}
 }
 
 void InitLeds()
 {
 	auto ledsCount = SaveManager::instance().GetData().ledsCount;
-	g_leds.first = new CRGB[ledsCount];
+	g_leds.start = new CRGB[ledsCount];
 
-	if (g_leds.first)
+	if (g_leds.start)
 	{
-		g_leds.second = ledsCount;
-		FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(g_leds.first, g_leds.second);
+		g_leds.end = g_leds.start + ledsCount;
+		FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(g_leds.start, g_leds.Size());
 		FastLED.setTemperature(CRGB(255, 190, 140));
 		FastLED.setDither(DISABLE_DITHER);
 		FastLED.showColor(CRGB::Black);

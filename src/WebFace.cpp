@@ -13,7 +13,7 @@ namespace Names
 {
 	auto title = "title";
 	auto reset = "reset";
-	auto resetData = "reset";
+	auto resetData = "resetData";
 	auto brightness = "brightness";
 	auto effect = "effect";
 	auto effectShowNames = "Выключить,Ровный свет,Мягкий свет,Затухание,Стробоскоп";
@@ -25,9 +25,23 @@ namespace Names
 	auto colorsCount = "colors_count";
 	auto flasherFullWidth = "flasher_full_width";
 	auto flasherRandomOrder = "flasher_random_order";
-	auto configForm = "/config_form";
-	auto configFormSubmit = "config_form_submit";
 	auto ledsCount = "leds_count";
+	auto applySettings = "apply_settings";
+	auto wifiMode = "wifi_mode";
+	auto wifiModeNames = "Подкл. к роутеру,Точка доступа";
+	//todo
+	auto ssid = "ssid";
+	auto password = "password";
+	auto apName = "apName";
+}
+
+namespace TempVals
+{
+	int 		ledsCount = 0;
+	WiFiMode 	wifiMode;
+	char		ssid[32] = "";
+	char		password[32] = "";
+	char		apName[32] = "";
 }
 
 #define data 			SaveManager::instance().GetData()
@@ -42,6 +56,7 @@ void SendMessage(const char * message)
 
 void ReloadPage()
 {
+	LOG_FUNC_LN();
 	SendMessage("reload_page");
 }
 
@@ -202,15 +217,57 @@ void BuildConfigPage()
 	GP.BUTTON(Names::reset, "Перезагрузить");
 	GP.BREAK();
 
-	GP.FORM_BEGIN(Names::configForm);
+	GP.HR();
 	{
 		GP.LABEL("Кол-во светодиодов");
+		TempVals::ledsCount = data.ledsCount;
 		GP.NUMBER(Names::ledsCount, "", data.ledsCount, 1, 300);
 		GP.BREAK();
 
-		GP.FORM_SUBMIT(Names::configFormSubmit, "Применить");
+		if (data.wifi.connectionStatus == wl_status_t::WL_NO_SSID_AVAIL)
+		{
+			GP.LABEL("Не удалось подкючиться: сеть с выбранным SSID не найдена");
+			GP.BREAK();
+		}
+		else if (data.wifi.connectionStatus == wl_status_t::WL_WRONG_PASSWORD)
+		{
+			GP.LABEL("Не удалось подкючиться: неверный пароль");
+			GP.BREAK();
+		}
+		else if (data.wifi.connectionStatus != wl_status_t::WL_CONNECTED)
+		{
+			String str = String("Не удалось подкючиться: код ошибки ") + String(int(data.wifi.connectionStatus));
+			GP.LABEL(str.c_str());
+			GP.BREAK();
+		}
+
+		GP.LABEL("Режим WiFi");
+		TempVals::wifiMode = data.wifi.mode;
+		GP.SELECT(Names::wifiMode, Names::wifiModeNames, (int)data.wifi.mode - 1);
+		GP.BREAK();
+
+		if (data.wifi.mode == WiFiMode::WIFI_AP)
+		{
+			GP.LABEL("Имя точки доступа");
+			strcpy(TempVals::apName, data.wifi.ApName);
+			GP.TEXT(Names::apName, "", data.wifi.ApName);
+			GP.BREAK();
+		}
+		else if (data.wifi.mode == WiFiMode::WIFI_STA)
+		{
+			GP.LABEL("SSID");
+			strcpy(TempVals::ssid, data.wifi.SSID);
+			GP.TEXT(Names::ssid, "", data.wifi.SSID);
+			GP.BREAK();
+			GP.LABEL("Пароль");
+			strcpy(TempVals::password, data.wifi.password);
+			GP.TEXT(Names::password, "", data.wifi.password);
+			GP.BREAK();
+		}
+
+		GP.BUTTON(Names::applySettings, "Применить");
 	}
-	GP.FORM_END();
+	GP.HR();
 
 	GP.BUTTON(Names::resetData, "Сбросить установки");
 	GP.BREAK();
@@ -229,9 +286,34 @@ void HandleConfigPage()
 		SaveManager::instance().ResetAndSave();
 		Reboot();
 	}
-	else if (g_portal.isFormSubmitted(Names::configFormSubmit))
+	else if (g_portal.click(Names::ledsCount))
 	{
-		dataToChange.ledsCount = g_portal.getInt(Names::ledsCount);
+		TempVals::ledsCount = g_portal.getInt(Names::ledsCount);
+	}
+	else if (g_portal.click(Names::wifiMode))
+	{
+		TempVals::wifiMode = (WiFiMode)(g_portal.getSelected(Names::wifiMode, Names::wifiModeNames) + 1);
+	}
+	else if (false)
+	{
+		// todo get apName, ssid, password
+	}
+	else if (g_portal.click(Names::applySettings))
+	{
+		dataToChange.ledsCount = TempVals::ledsCount;
+		dataToChange.wifi.mode = TempVals::wifiMode;
+		if (strlen(TempVals::apName))
+		{
+			strcpy(dataToChange.wifi.ApName, TempVals::apName);
+		}
+		if (strlen(TempVals::ssid))
+		{
+			strcpy(dataToChange.wifi.SSID, TempVals::ssid);
+		}
+		if (strlen(TempVals::password))
+		{
+			strcpy(dataToChange.wifi.password, TempVals::password);
+		}		
 		SaveManager::instance().Save();
 		Reboot();
 	}

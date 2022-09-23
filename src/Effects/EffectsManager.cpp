@@ -6,7 +6,7 @@
 #include "Effects/FlasherEffect.h"
 #include "Utils.h"
 
-void EffectsManager::Init(Leds leds, const EffectsData * effectsData)
+void EffectsManager::Init(LedsRange leds, const EffectsData * effectsData)
 {
 	m_leds = leds;
 	m_effectsData = effectsData;
@@ -58,7 +58,7 @@ void EffectsManager::ConfigureEffect()
 	}
 	if (auto effect = GetCurrentEffect<ShelvesEffect>())
 	{
-		effect->SetShelvesLedsAdapter(m_shelvesAdapter);
+		effect->SetLedStripsAdapter(m_stripsAdapter);
 	}
 	if (auto effect = GetCurrentEffect<FlasherEffect>())
 	{

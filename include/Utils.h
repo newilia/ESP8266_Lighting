@@ -12,6 +12,7 @@
 
 inline void Reboot()
 {
+	LOG_FUNC_LN();
 	int * p = 0;
 	*p = 42;
 }

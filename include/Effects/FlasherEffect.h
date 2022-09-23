@@ -41,16 +41,22 @@ public:
 			}
 		}
 
-		auto shelves = m_adapter->GetShelves();
-		for (int i = 0; i < shelves.second; ++i)
+		for (int i = 0; i < m_adapter->GetCount(); ++i)
 		{
-			auto shelf = shelves.first[i];
-			int start = m_isFullWidth ? 0 : (shelf.size * m_colorIndex / m_colorsCount);
-			int end = m_isFullWidth ? shelf.size : (shelf.size * (m_colorIndex + 1) / m_colorsCount);
+			auto & strip = *m_adapter->GetStrip(i);
+			auto * flashStart = strip.leds.start;
+			auto * flashEnd = strip.leds.end;
 
-			for (int j = 0; j < shelf.size; ++j)
+			if (!m_isFullWidth && !strip.isSpecial)
 			{
-				shelf.leds[j] = isFlash && j >= start && j < end ? m_colors[m_colorIndex] : CRGB::Black;
+				flashStart += strip.leds.Size() * m_colorIndex / m_colorsCount;
+				flashEnd = flashStart + (strip.leds.Size() / m_colorsCount);
+			}
+
+			for (auto * led = strip.leds.start; led < strip.leds.end; ++led)
+			{
+				bool isLedInFlashBounds = led >= flashStart && led < flashEnd;
+				*led = isFlash && isLedInFlashBounds ? m_colors[m_colorIndex] : CRGB::Black;
 			}
 		}
 
