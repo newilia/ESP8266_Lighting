@@ -12,9 +12,9 @@ public:
 	{
 		EVERY_N_MILLIS(EFFECTS_PERIOD_DEFAULT)
 		{
-			m_timeArg += 1 + m_speed * 5;
+			UpdateTime(0.2, 1);
 
-			int brightness = (int)m_timeArg % 512;
+			int brightness = (int)m_time % 512;
 			if (brightness > 255)
 			{
 				brightness = 511 - brightness;
@@ -31,5 +31,4 @@ public:
 		}
 	}
 private:
-	float	m_timeArg = 0;
 };
