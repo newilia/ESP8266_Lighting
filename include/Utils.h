@@ -58,3 +58,45 @@ inline uint8_t GetTimeSwitchingCounter(time_t time, const T * timings, uint8_t t
 	uint8_t result = counter % counterMax;
 	return result;
 }
+
+
+template<typename T>
+inline void Swap(T & val1, T & val2)
+{
+	T temp = std::move(val1);
+	val1 = std::move(val2);
+	val2 = std::move(temp);
+}
+
+template<typename T>
+void EnsureIncreasing(T & val1, T & val2)
+{
+	if (val1 > val2)
+	{
+		Swap(val1, val2);
+	}
+}
+
+inline void ConstrainFloat(float & val, float start, float end)
+{
+	EnsureIncreasing(start, end);
+	if (val < start)
+	{
+		val = start;
+	}
+	else if (val > end)
+	{
+		val = end;
+	}
+}
+
+inline CRGB MixColors(const CRGB & led1, const CRGB & led2, float ratio)
+{
+	ConstrainFloat(ratio, 0, 1);
+	CRGB result;
+	for (int i = 0; i < 3; ++i)
+	{
+		result[i] = led1[i] * ratio + led2[i] * (1 - ratio);
+	}
+	return result;
+}

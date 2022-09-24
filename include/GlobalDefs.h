@@ -3,6 +3,7 @@
 #include <utility>
 #include <FastLED.h>
 #include "PtrRange.h"
+#include <IPAddress.h>
 typedef PtrRange<CRGB> LedsRange;
 #define DEBUG 0
 #define time_t unsigned long
@@ -15,4 +16,6 @@ const int EFFECT_SPEED_MIN = 0;
 const int EFFECT_SPEED_MAX = 1;
 const float EFFECT_SPEED_DEFAULT = 0.5;
 const int EFFECTS_PERIOD_DEFAULT = 10;
-const int COLORS_COUNT_MAX = 5;
+const int COLORS_COUNT_MAX = 6;
+const IPAddress ADDRESS(192,168,0,168);
+const int WIFI_CONNECTING_TIMEOUT = 10000;

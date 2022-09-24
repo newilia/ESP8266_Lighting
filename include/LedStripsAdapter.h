@@ -24,10 +24,8 @@ class LedStripsAdapter
 public:
 	void SetCount(uint8_t stripsCount)
 	{
-		if (m_strips)
-		{
-			delete m_strips;
-		}
+		LOG_FUNC_LN();
+		delete m_strips;
 		m_strips = new Strip[stripsCount];
 		m_count = stripsCount;
 	}
@@ -60,6 +58,6 @@ private:
 		delete m_strips;
 	}
 	
-	Strip *	m_strips;
-	int		m_count;
+	Strip *	m_strips = nullptr;
+	int		m_count = 0;
 };

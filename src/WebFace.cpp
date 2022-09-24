@@ -4,6 +4,7 @@
 #include "Effects/EffectsBase.h"
 #include "Effects/FadingEffect.h"
 #include "Effects/FlasherEffect.h"
+#include "Effects/GradientEffect.h"
 #include <GyverPortal.h>
 #include "Utils.h"
 #include "SaveData.h"
@@ -16,7 +17,7 @@ namespace Names
 	auto resetData = "resetData";
 	auto brightness = "brightness";
 	auto effect = "effect";
-	auto effectShowNames = "Выключить,Ровный свет,Мягкий свет,Затухание,Стробоскоп";
+	auto effectShowNames = "Выключить,Ровный свет,Мягкий свет,Затухание,Стробоскоп,Градиент";
 	auto colorPickerPrefix = "color_picker";
 	auto effectSpeed = "effect_speed";
 	auto fading = "fading";
@@ -27,8 +28,12 @@ namespace Names
 	auto flasherRandomOrder = "flasher_random_order";
 	auto ledsCount = "leds_count";
 	auto applySettings = "apply_settings";
-	auto wifiMode = "wifi_mode";
-	auto wifiModeNames = "Подкл. к роутеру,Точка доступа";
+	auto effectSize = "effect_size";
+	auto reloadPage = "reload_page";
+	auto uniteStripes = "uniteStripes";
+	auto gradientDirection = "gradient_direction";
+	auto gradientDirections = ">>,<<,><,<>";
+
 	//todo
 	auto ssid = "ssid";
 	auto password = "password";
@@ -47,17 +52,27 @@ namespace TempVals
 #define data 			SaveManager::instance().GetData()
 #define dataToChange 	SaveManager::instance().GetDataToChange()
 
-const int SPEED_SLIDER_MAX = 10;
+const int DEFAULT_SLIDER_STEPS = 100;
 
 void SendMessage(const char * message)
 {
-	g_socketServer.broadcastTXT(message);
+	try
+	{
+		LOG_FUNC();
+		LOG(message);
+		LOG("...");
+		g_socketServer.broadcastTXT(message);
+		LOG_LN("Ok!");
+	}
+	catch(...)
+	{
+		LOG_LN("SendMessage() : Exception caught");
+	}
 }
 
 void ReloadPage()
 {
-	LOG_FUNC_LN();
-	SendMessage("reload_page");
+	SendMessage(Names::reloadPage);
 }
 
 void InitPortal()
@@ -65,6 +80,7 @@ void InitPortal()
 	g_portal.attachBuild(BuildPage);
 	g_portal.attach(ActionHandler);
 	g_portal.start();
+	g_socketServer.begin();
 }
 
 void BuildPage()
@@ -130,8 +146,8 @@ void BuildMainPage()
 	if (EffectsManager::instance().GetCurrentEffect<SpeedEffect>())
 	{
 		GP.BLOCK_BEGIN();
-		int sliderValue = data.effects.speed * SPEED_SLIDER_MAX;
-		GP.SLIDER(Names::effectSpeed, "Скорость", sliderValue, 0, SPEED_SLIDER_MAX);
+		int sliderValue = data.effects.speed * DEFAULT_SLIDER_STEPS;
+		GP.SLIDER(Names::effectSpeed, "Скорость", sliderValue, 0, DEFAULT_SLIDER_STEPS);
 		GP.BLOCK_END();
 	}
 
@@ -153,6 +169,33 @@ void BuildMainPage()
 			GP.BLOCK_END();
 		}
 	}
+	
+	if (EffectsManager::instance().GetCurrentEffect<SizedEffect>())
+	{
+		GP.BLOCK_BEGIN();
+		int sliderValue = data.effects.size * DEFAULT_SLIDER_STEPS;
+		GP.SLIDER(Names::effectSize, "Размер", sliderValue, 0, DEFAULT_SLIDER_STEPS);
+		
+		if (auto effect = EffectsManager::instance().GetCurrentEffect<GradientEffect>())
+		{
+			if (EffectsManager::instance().GetStripesCount() > 1)
+			{
+				GP.BREAK();
+				GP.LABEL("Объединить полосы");
+				GP.CHECK(Names::uniteStripes, data.effects.uniteStripes);
+				GP.BREAK();
+			}
+		}
+		GP.BLOCK_END();
+	}
+
+	/*if (auto effect = EffectsManager::instance().GetCurrentEffect<GradientEffect>())
+	{
+		GP.BLOCK_BEGIN();
+		GP.LABEL("Направление");
+		GP.SELECT(Names::gradientDirection, Names::gradientDirections, (int)data.effects.gradient.direction);
+		GP.BLOCK_END();
+	}*/
 }
 
 void HandleMainPage()
@@ -191,7 +234,12 @@ void HandleMainPage()
 	}
 	else if (g_portal.click(Names::effectSpeed))
 	{
-		dataToChange.effects.speed = (float)g_portal.getInt(Names::effectSpeed) / SPEED_SLIDER_MAX;
+		dataToChange.effects.speed = (float)g_portal.getInt(Names::effectSpeed) / DEFAULT_SLIDER_STEPS;
+		EffectsManager::instance().OnEffectSettingsChanged();
+	}
+	else if (g_portal.click(Names::effectSize))
+	{
+		dataToChange.effects.size = (float)g_portal.getInt(Names::effectSize) / DEFAULT_SLIDER_STEPS;
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 	else if (g_portal.click(Names::flasherFullWidth))
@@ -202,6 +250,16 @@ void HandleMainPage()
 	else if (g_portal.click(Names::flasherRandomOrder))
 	{
 		dataToChange.effects.flasher.randomOrder = g_portal.getCheck(Names::flasherRandomOrder);
+		EffectsManager::instance().OnEffectSettingsChanged();
+	}
+	else if (g_portal.click(Names::uniteStripes))
+	{
+		dataToChange.effects.uniteStripes = g_portal.getCheck(Names::uniteStripes);
+		EffectsManager::instance().OnEffectSettingsChanged();
+	}
+	else if (g_portal.click(Names::gradientDirection))
+	{
+		dataToChange.effects.gradient.direction = (GradientEffect::Direction) g_portal.getSelected(Names::gradientDirection, Names::gradientDirections);
 		EffectsManager::instance().OnEffectSettingsChanged();
 	}
 }
@@ -223,47 +281,6 @@ void BuildConfigPage()
 		TempVals::ledsCount = data.ledsCount;
 		GP.NUMBER(Names::ledsCount, "", data.ledsCount, 1, 300);
 		GP.BREAK();
-
-		if (data.wifi.connectionStatus == wl_status_t::WL_NO_SSID_AVAIL)
-		{
-			GP.LABEL("Не удалось подкючиться: сеть с выбранным SSID не найдена");
-			GP.BREAK();
-		}
-		else if (data.wifi.connectionStatus == wl_status_t::WL_WRONG_PASSWORD)
-		{
-			GP.LABEL("Не удалось подкючиться: неверный пароль");
-			GP.BREAK();
-		}
-		else if (data.wifi.connectionStatus != wl_status_t::WL_CONNECTED)
-		{
-			String str = String("Не удалось подкючиться: код ошибки ") + String(int(data.wifi.connectionStatus));
-			GP.LABEL(str.c_str());
-			GP.BREAK();
-		}
-
-		GP.LABEL("Режим WiFi");
-		TempVals::wifiMode = data.wifi.mode;
-		GP.SELECT(Names::wifiMode, Names::wifiModeNames, (int)data.wifi.mode - 1);
-		GP.BREAK();
-
-		if (data.wifi.mode == WiFiMode::WIFI_AP)
-		{
-			GP.LABEL("Имя точки доступа");
-			strcpy(TempVals::apName, data.wifi.ApName);
-			GP.TEXT(Names::apName, "", data.wifi.ApName);
-			GP.BREAK();
-		}
-		else if (data.wifi.mode == WiFiMode::WIFI_STA)
-		{
-			GP.LABEL("SSID");
-			strcpy(TempVals::ssid, data.wifi.SSID);
-			GP.TEXT(Names::ssid, "", data.wifi.SSID);
-			GP.BREAK();
-			GP.LABEL("Пароль");
-			strcpy(TempVals::password, data.wifi.password);
-			GP.TEXT(Names::password, "", data.wifi.password);
-			GP.BREAK();
-		}
 
 		GP.BUTTON(Names::applySettings, "Применить");
 	}
@@ -290,30 +307,9 @@ void HandleConfigPage()
 	{
 		TempVals::ledsCount = g_portal.getInt(Names::ledsCount);
 	}
-	else if (g_portal.click(Names::wifiMode))
-	{
-		TempVals::wifiMode = (WiFiMode)(g_portal.getSelected(Names::wifiMode, Names::wifiModeNames) + 1);
-	}
-	else if (false)
-	{
-		// todo get apName, ssid, password
-	}
 	else if (g_portal.click(Names::applySettings))
 	{
 		dataToChange.ledsCount = TempVals::ledsCount;
-		dataToChange.wifi.mode = TempVals::wifiMode;
-		if (strlen(TempVals::apName))
-		{
-			strcpy(dataToChange.wifi.ApName, TempVals::apName);
-		}
-		if (strlen(TempVals::ssid))
-		{
-			strcpy(dataToChange.wifi.SSID, TempVals::ssid);
-		}
-		if (strlen(TempVals::password))
-		{
-			strcpy(dataToChange.wifi.password, TempVals::password);
-		}		
 		SaveManager::instance().Save();
 		Reboot();
 	}
@@ -322,16 +318,18 @@ void HandleConfigPage()
 void AddCustomScript()
 {
 	*_GP += 
-	F("<script type=\"text/javascript\">\\
+	"<script type=\"text/javascript\">\\
 	const socket = new WebSocket('ws://' + window.location.hostname + ':81/');\\
 	socket.addEventListener('message', (event) => {\\
 		console.log('Message from server ', event.data);\\
 		\\
-		if (event.data == 'reload_page') {\\
+		if (event.data == '";
+	*_GP += Names::reloadPage;
+	*_GP += "') {\\
 			window.location.reload();\\
 		}\\
 	});\\
-	</script>");
+	</script>";
 }
 
 #undef data

@@ -7,6 +7,6 @@ struct PtrRange
 	T * start = nullptr;
 	T * end = nullptr;
 
-	int Size() const { return (end - start); }
+	size_t Count() const { return (end - start); }
 	operator bool() { return start && end; }
 };

@@ -50,7 +50,7 @@ const char GP_DARK[] PROGMEM =
 "span {font-size:20px;}\n"
 "label {font-size:20px;margin:0 5px;}\n"
 ".chartBlock {border-radius:15px;margin:10px;width:90%;max-width:1000px;height:450px}\n"
-".block {border-radius:10px;background-color:#2a2d35;padding:15px 0px;margin-top:3px;margin-bottom:15px;width:90%;max-width:450px;justify-content:space-evenly;display:flex;align-items:center;}\n"
+".block {border-radius:10px;background-color:#2a2d35;padding:15px 0px;margin-top:3px;margin-bottom:15px;width:90%;max-width:450px;justify-content:space-evenly;align-items:center;}\n"
 ".sldBlock{width:90%;display:flex;flex-direction:row;justify-content:space-evenly;align-items:center}"
 ".sldLbl{font-size:15px;}"
 "input[type=\"number\"],input[type=\"text\"],input[type=\"password\"],input[type=\"date\"],input[type=\"time\"],input[type=\"range\"],input[type=\"color\"],input[type=\"checkbox\"],select,textarea\n"
